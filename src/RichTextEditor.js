@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import WebViewBridge from 'react-native-webview-bridge-updated';
 import {InjectedMessageHandler} from './WebviewMessageHandler';
 import {actions, messages} from './const';
-import {Modal, View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, PixelRatio, Keyboard, Dimensions} from 'react-native';
+import {Modal, View, Text, StyleSheet, TextInput, TouchableOpacity, Platform, PixelRatio, Dimensions} from 'react-native';
 
 const injectScript = `
   (function () {
@@ -24,7 +24,8 @@ export default class RichTextEditor extends Component {
     hiddenTitle: PropTypes.bool,
     enableOnChange: PropTypes.bool,
     footerHeight: PropTypes.number,
-    contentInset: PropTypes.object
+    contentInset: PropTypes.object,
+    onHeightChange: PropTypes.func
   };
 
   static defaultProps = {
@@ -37,11 +38,10 @@ export default class RichTextEditor extends Component {
     this._sendAction = this._sendAction.bind(this);
     this.registerToolbar = this.registerToolbar.bind(this);
     this.onBridgeMessage = this.onBridgeMessage.bind(this);
-    this._onKeyboardWillShow = this._onKeyboardWillShow.bind(this);
-    this._onKeyboardWillHide = this._onKeyboardWillHide.bind(this);
     this.state = {
       selectionChangeListeners: [],
       onChange: [],
+      onSizeChange: [],
       showLinkDialog: false,
       linkInitialUrl: '',
       linkTitle: '',
@@ -49,50 +49,6 @@ export default class RichTextEditor extends Component {
       keyboardHeight: 0
     };
     this._selectedTextChangeListeners = [];
-  }
-
-  componentDidMount() {
-    if(PlatformIOS) {
-      this.keyboardEventListeners = [
-        Keyboard.addListener('keyboardWillShow', this._onKeyboardWillShow),
-        Keyboard.addListener('keyboardWillHide', this._onKeyboardWillHide)
-      ];
-    } else {
-      this.keyboardEventListeners = [
-        Keyboard.addListener('keyboardDidShow', this._onKeyboardWillShow),
-        Keyboard.addListener('keyboardDidHide', this._onKeyboardWillHide)
-      ];
-    }
-  }
-
-  componentWillUnmount() {
-    if (this.keyboardEventListeners) {
-      this.keyboardEventListeners.forEach((eventListener) => eventListener.remove());
-    }
-  }
-
-  _onKeyboardWillShow(event) {
-    const newKeyboardHeight = event.endCoordinates.height;
-    if (this.state.keyboardHeight === newKeyboardHeight) {
-      return;
-    }
-    if (newKeyboardHeight) {
-      this.setEditorAvailableHeightBasedOnKeyboardHeight(newKeyboardHeight);
-    }
-    this.setState({keyboardHeight: newKeyboardHeight});
-  }
-
-  _onKeyboardWillHide(event) {
-    this.setState({keyboardHeight: 0});
-  }
-
-  setEditorAvailableHeightBasedOnKeyboardHeight(keyboardHeight) {
-    const {top = 0, bottom = 0} = this.props.contentInset;
-    const {marginTop = 0, marginBottom = 0} = this.props.style;
-    const spacing = marginTop + marginBottom + top + bottom;
-
-    const editorAvailableHeight = Dimensions.get('window').height - (keyboardHeight * 2) - spacing;
-    this.setEditorHeight(editorAvailableHeight);
   }
 
   onBridgeMessage(str){
@@ -193,6 +149,11 @@ export default class RichTextEditor extends Component {
           this._selectedTextChangeListeners.forEach((listener) => {
             listener(selectedText);
           });
+          break;
+        }
+        case messages.HEIGHT_CHANGE: {
+          const content = message.data;
+          this.props.onHeightChange(content);
           break;
         }
       }

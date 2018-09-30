@@ -919,8 +919,21 @@
 				zss_editor.focusTitle();
 
 				setTimeout(function() {
-					WebViewBridge.send(JSON.stringify({type: 'ZSS_INITIALIZED'}))
+					WebViewBridge.send(JSON.stringify({type: 'ZSS_INITIALIZED'}));
+					sendHeightChangeMessege();
 				}, 20);
+
+				setTimeout(function() {
+					sendHeightChangeMessege();
+				}, 100);
+
+				setTimeout(function() {
+					sendHeightChangeMessege();
+				}, 200);
+
+				setTimeout(function() {
+					sendHeightChangeMessege();
+				}, 300);
 
 			}//end
 
@@ -1373,7 +1386,11 @@
 					WebViewBridge.send(JSON.stringify({
 						type: 'CONTENT_CHANGE',
 						data: {content: getHtml("zss_editor_content")}
-					}))
+					}));
+					sendHeightChangeMessege();
+				});
+				$('#zss_editor_title').on('input', function(){
+					sendHeightChangeMessege();
 				});
 			}
 
@@ -1394,6 +1411,28 @@
 			zss_editor.insertHTML = function(html) {
 				document.execCommand('insertHTML', false, html);
 				zss_editor.enabledEditingItems();
+			}
+
+			function sendHeightChangeMessege() {
+				var currentHeight = getDocumentHeight();
+				var heightChangeMessage = JSON.stringify({
+					type: 'HEIGHT_CHANGE',
+					data: currentHeight
+				});
+
+				if (currentHeight != zss_editor.previousCurrentHeight) {
+					WebViewBridge.send(heightChangeMessage);
+					zss_editor.previousCurrentHeight = currentHeight;
+				}
+			}
+
+			function getDocumentHeight() {
+				var body = document.body,
+				    html = document.documentElement;
+
+				var height = Math.max( body.scrollHeight, body.offsetHeight,
+				                       html.clientHeight, html.scrollHeight, html.offsetHeight );
+				return height;
 			}
 
 			function getHtml(editorId) {
@@ -1642,6 +1681,7 @@
 				outline: 0px solid transparent;
 				-webkit-tap-highlight-color: rgba(0,0,0,0);
 				-webkit-touch-callout: none;
+				overflow: visible;
 			}
 
 			html, body {
@@ -1650,6 +1690,7 @@
 				font-family: Arial, Helvetica, sans-serif;
 				font-size:1em;
 				color:#2d4150;
+				overflow: visible;
 			}
 
 			body {
@@ -1657,8 +1698,8 @@
 				padding-right:10px;
 				padding-top: 0px;
 				padding-bottom: 0px;
-				overflow-y: scroll;
-				-webkit-overflow-scrolling: touch;
+				overflow: visible;
+				/* -webkit-overflow-scrolling: touch; */
 				height: 100%;
 			}
 
@@ -1681,8 +1722,8 @@
 				font-family: Arial, Helvetica, sans-serif;
 				color: #000;
 				height: 100%;
-				-webkit-overflow-scrolling: touch;
-				overflow:auto;
+				/* -webkit-overflow-scrolling: touch; */
+				overflow: visible;
 
 			}
 
